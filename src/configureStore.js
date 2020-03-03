@@ -1,17 +1,23 @@
-import { createStore } from 'redux'
 import { persistStore, persistReducer } from 'redux-persist'
+import { createStore, applyMiddleware } from 'redux'
+import { createStateSyncMiddleware, withReduxStateSync, initStateWithPrevTab } from 'redux-state-sync'
 import storage from 'redux-persist/lib/storage'
-import reducers from './reducers'
+
+import rootReducer from './reducers'
+
+const middlewares = [createStateSyncMiddleware({})]
 
 const persistConfig = {
   key: 'root',
-  storage: storage
+  storage: storage,
 }
 
-const persistedReducer = persistReducer(persistConfig, reducers)
-
+const wrappedRootReducer = withReduxStateSync(rootReducer)
+const persistedReducer = persistReducer(persistConfig, wrappedRootReducer)
 export default () => {
-  let store = createStore(persistedReducer)
+  const store = createStore(persistedReducer, {}, applyMiddleware(...middlewares))
+  initStateWithPrevTab(store)
+
   let persistor = persistStore(store)
   return { store, persistor }
 }
